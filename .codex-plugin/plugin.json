@@ -1,0 +1,40 @@
+{
+  "name": "logpacer",
+  "version": "0.1.0",
+  "description": "Connect your coding agent to the hosted LogPacer MCP server, with skills for setting up collection, instrumenting apps and investigating logs.",
+  "author": {
+    "name": "LogPacer",
+    "url": "https://logpacer.com"
+  },
+  "homepage": "https://logpacer.com",
+  "repository": "https://github.com/LogPacer/logpacer-marketplace",
+  "license": "MIT",
+  "keywords": [
+    "logpacer",
+    "logs",
+    "observability",
+    "mcp",
+    "otlp",
+    "metrics",
+    "traces"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "LogPacer",
+    "shortDescription": "Set up, instrument and investigate with LogPacer from your coding agent.",
+    "longDescription": "Connects your coding agent to LogPacer so it can install EdgePacer, choose which sources to collect, instrument apps over OTLP, build metric panels, set up monitors and investigate logs. Changes that alter what is collected or who is notified wait for your approval.",
+    "developerName": "LogPacer",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://logpacer.com",
+    "defaultPrompt": [
+      "Connect this project to LogPacer",
+      "Find the errors in my logs from the last hour"
+    ]
+  }
+}

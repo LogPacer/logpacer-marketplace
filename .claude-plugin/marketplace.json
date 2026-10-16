@@ -1,0 +1,35 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "logpacer",
+  "owner": {
+    "name": "LogPacer",
+    "url": "https://github.com/LogPacer"
+  },
+  "metadata": {
+    "description": "The LogPacer plugin for coding agents."
+  },
+  "plugins": [
+    {
+      "name": "logpacer",
+      "source": "./",
+      "description": "Connect your coding agent to the hosted LogPacer MCP server, with skills for setting up collection, instrumenting apps and investigating logs.",
+      "version": "0.1.0",
+      "author": {
+        "name": "LogPacer",
+        "url": "https://logpacer.com"
+      },
+      "homepage": "https://logpacer.com",
+      "license": "MIT",
+      "category": "monitoring",
+      "keywords": [
+        "logpacer",
+        "logs",
+        "observability",
+        "mcp",
+        "otlp",
+        "metrics",
+        "traces"
+      ]
+    }
+  ]
+}

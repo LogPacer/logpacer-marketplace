@@ -1,0 +1,11 @@
+{
+  "name": "logpacer",
+  "version": "0.1.0",
+  "description": "Connect your coding agent to the hosted LogPacer MCP server, with skills for setting up collection, instrumenting apps and investigating logs.",
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "logpacer": {
+      "httpUrl": "https://app.logpacer.com/mcp"
+    }
+  }
+}

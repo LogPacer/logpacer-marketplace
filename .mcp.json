@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "logpacer": {
+      "type": "http",
+      "url": "https://app.logpacer.com/mcp"
+    }
+  }
+}
