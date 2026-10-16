@@ -5,7 +5,18 @@ This repository is the LogPacer plugin for coding agents. LogPacer is in private
 The plugin gives your agent two things:
 
 - **A connection to the LogPacer MCP server** at `https://app.logpacer.com/mcp`. Through it the agent reads your logs, metrics and traces and makes changes in your LogPacer account. A change that alters what is collected, analysed or stopped, or who is notified, waits for a person to approve it.
-- **Skills** that teach the agent LogPacer's workflows. Start with the `logpacer` skill. More skills are in progress: installing EdgePacer, picking sources, instrumenting apps over OTLP, logging setup, metric panels, monitors and investigation. The skills hold the workflow; facts such as endpoints and install commands come live from LogPacer.
+- **Skills** that teach the agent LogPacer's workflows. The skills hold the workflow; facts such as endpoints and install commands come live from LogPacer.
+
+| Skill | Teaches |
+|---|---|
+| `logpacer` | Start here: connecting, approvals, roles and safety rules |
+| `logpacer-install-edgepacer` | Installing EdgePacer on a host, in Docker or in Kubernetes |
+| `logpacer-pick-sources` | Choosing, analyzing and collecting discovered sources, and Handling modes |
+| `logpacer-instrument-otlp` | Sending an app's traces and metrics over OTLP, per language |
+| `logpacer-logging-setup` | Logging so LogPacer collects the logs and links them to traces |
+| `logpacer-metrics-panels` | Metrics boards and PromQL panels |
+| `logpacer-monitors-alerts` | Cron monitors and notification destinations |
+| `logpacer-investigate` | Searching, counting and correlating logs and traces |
 
 ## Install
 
