@@ -84,7 +84,7 @@ The CLI installer is served by your LogPacer deployment at `/install/cli`.
 
 Each agent signs in to LogPacer with OAuth the first time it uses the server. Your browser opens LogPacer's sign-in page, where you pick the account. In Claude Code, run `/mcp` if the sign-in does not start on its own.
 
-Grant write access when LogPacer asks for it. The agent needs it to make changes, and changes that alter collection or notifications still wait for your approval.
+Grant write access when LogPacer asks for it, or turn on Allow changes for the connection under Settings → API Credentials in LogPacer. The agent needs it to make changes, and changes that alter collection or notifications still wait for your approval.
 
 ## Developing locally
 

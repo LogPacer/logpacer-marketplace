@@ -25,7 +25,7 @@ Read the chosen mode in the `install` guide and check it is available.
 ## 2. Prepare the CLI on the target machine
 
 - `logpacer auth status`: signed in, to the account the human means?
-- Not signed in, or no write access: `logpacer auth login --scope operations:write`; the human completes sign-in in the browser.
+- Not signed in: `logpacer auth login --scope operations:write`; the human completes sign-in in the browser. Signed in without write access: the human turns on Allow changes for this CLI login in LogPacer, or you log in again with that command.
 - No CLI yet: the human installs it with the command on LogPacer's Connect an agent page.
 
 ## 3. Install

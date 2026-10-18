@@ -45,7 +45,7 @@ Follow a change with `get_agent_change change_id=<id>` (CLI: `logpacer changes s
 |---|---|
 | `operations_not_enabled` | Agent changes are off for the account; pass on the overview's `next_step` and keep to reads. |
 | `role_required` | Hand the step to an account admin. |
-| `scope_required` | MCP: the human reconnects LogPacer with write access. CLI: `logpacer auth login --scope operations:write`. |
+| `scope_required` | The human turns on Allow changes for this connection or CLI login in LogPacer (MCP gives the page as `ui_url`), then you retry. Otherwise MCP: the human reconnects with write access; CLI: `logpacer auth login --scope operations:write`. |
 | `too_many_pending_changes` | Ask the human to decide the open changes first. |
 | `stale` | Read the target again (for the logging profile, its `policy_version`) and re-propose if the human still wants it. |
 | `not_found` | The id is not in this account; list again. |
