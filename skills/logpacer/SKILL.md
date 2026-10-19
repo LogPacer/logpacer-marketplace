@@ -1,6 +1,6 @@
 ---
 name: logpacer
-description: Start here for any LogPacer task. Use when connecting a coding agent to LogPacer, before setting up collection, instrumentation, metrics or monitors, when a LogPacer change waits for approval, or when a LogPacer tool returns role_required, scope_required or operations_not_enabled.
+description: Start here for LogPacer tasks. Use when connecting or choosing deployments and accounts, setting up collection, instrumentation, metrics or monitors, when a change waits for approval, or when a tool returns role_required, scope_required or operations_not_enabled.
 ---
 
 # LogPacer
@@ -9,7 +9,7 @@ LogPacer collects, parses, stores and searches logs, and receives OTLP traces an
 
 ## Rules that always apply
 
-1. **Read the account first.** Call `get_account_overview` (CLI: `logpacer ops run get_account_overview --format json`) before anything else. `agent_changes.enabled` says whether agent changes are on for the account, and `role` is the human's Account Role (`member` or `admin`). When changes are off, reads still work: give the human `agent_changes.next_step` and propose no changes.
+1. **Read the account first.** Select the connection as described below, then call its `get_account_overview` (CLI: `logpacer ops run get_account_overview --format json`) before other operations. `agent_changes.enabled` says whether agent changes are on for the account, and `role` is the human's Account Role (`member` or `admin`). When changes are off, reads still work: give the human `agent_changes.next_step` and propose no changes.
 2. **Live facts win.** Endpoints, install commands, versions, Discovery states, Handling modes and tier rules come from `get_guide` (CLI: `logpacer ops run get_guide --arg topic=<topic>`). Topics: `install`, `otlp`, `sources`, `logging_profile`, `metrics`, `monitors`, `approvals`, `human_actions`. Never use a value from memory or from a skill when the guide gives one; cite the topic's `version` when you report what you followed.
 3. **Humans approve changes.** LogPacer fixes each operation's tier on the server: `read`; `auto` (applies at once and is recorded); `confirm` (a human accepts LogPacer's wording, in the client when it can prompt, otherwise on LogPacer's page); `approve` (a human approves on LogPacer's page while signed in). Nothing you send lowers a tier.
 4. **On `approval_pending`, hand over and stop.** Give the human the change's `approval_url` and `code`, and stop that step. Never retry with changed arguments to get past a pending or declined change; the same arguments return the same change. Never approve, confirm or decline for the human, whether by answering a prompt or by driving their browser.
@@ -27,6 +27,12 @@ Boards and panels, the logging profile, notification destinations and OTLP metri
 - **MCP:** the plugin connects the hosted LogPacer server. The first call opens LogPacer's sign-in in the browser, where the human picks the account and grants write access. In Claude Code, `/mcp` starts sign-in if it does not start on its own.
 - **CLI:** `logpacer auth login --scope operations:write`, then `logpacer auth status`. A login without write access can still read.
 - **Check:** `get_account_overview` returns the account and `role`.
+
+### Choose a connection
+
+Use the requested connection, then the project default, then the sole available connection; ask if ambiguous. Never substitute another deployment when the target is unavailable. Keep guides, IDs and approvals on their originating connection; read the account again when switching. Label comparisons by connection and account.
+
+For setup, URL verification, multiple connections or project defaults, read [Connecting to other deployments](references/connections.md).
 
 ## Change results
 
