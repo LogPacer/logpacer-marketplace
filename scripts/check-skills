@@ -5,6 +5,8 @@
 # every file under skills/ for words public copy must not contain.
 # Standard library only, so CI runs it on a bare runner Ruby.
 
+require "digest"
+require "set"
 require "yaml"
 
 ROOT = File.expand_path("..", __dir__)
@@ -17,16 +19,26 @@ MAX_BYTES = 8000
 FRONTMATTER_KEYS = %w[name description license compatibility metadata allowed-tools].freeze
 
 DENYLIST = [
-  [/sublog/i, "names the internal codename sublog/sublogger"],
-  [/loganalyzer/i, "names the internal codename loganalyzer"],
-  [/logrelay/i, "names the internal codename logrelay"],
-  [/logpacer_wire/i, "names the internal codename logpacer_wire"],
-  [/opentelemetry-native/i, %(says "OpenTelemetry-native"; say "OTLP-compatible")],
-  [/\.internal\.logpacer\.com/i, "names an internal hostname"],
-  [/\bapp\.internal\b/i, "names an internal hostname"],
-  [/registry\.logpacer\.com/i, "names the internal registry"],
-  [/\bharbor\b/i, "names the internal registry"]
+  [/opentelemetry-native/i, %(says "OpenTelemetry-native"; say "OTLP-compatible")]
 ].freeze
+
+# This repository is public, so it lists internal codenames only as SHA-256
+# digests of the lowercased word, compared against every word in the copy.
+CODENAME_DIGESTS = %w[
+  475cd3ac40d8928e9a3d2145e2140be3846783637618cb7c6bb744eaddedbb50
+  ae877628180e308b9e1d088eda3ca453dd4e5e80c8ff111f8b638f76b8a9ffc3
+  2515f1dca74520b40ca45f2a0ee9f763671608642acfe62d57b5cebe61abd38e
+  ac1d60c7093b207f5f2cc62f2d64da484e621b1096ff5bd131dbc92580b9edc5
+  56ba6e515587a93ae85ada70b6b9b827a6cc45fda329834833ad5c89f6a2d62f
+  c1d64b2d4cb30f1be788cc4d246ddd9fc1fe85a3eb3a85a3de33829dfaf6ce7d
+].to_set.freeze
+
+# Hostnames are checked by shape, so no internal one is written down: under
+# logpacer.com only these are public, and no host has an "internal" label
+# except Docker's own name for the host machine.
+PUBLIC_HOSTS = %w[logpacer.com app.logpacer.com].freeze
+DOCKER_HOST = "host.docker.internal"
+HOSTNAME = /\b(?:[a-z0-9-]+\.)+[a-z][a-z0-9-]+\b/i
 
 HELP = <<~HELP
   Usage: scripts/check-skills
@@ -72,7 +84,25 @@ end
 
 def denylist_problems(path)
   content = File.binread(path)
-  DENYLIST.filter_map { |pattern, reason| "#{reason} (#{content[pattern].inspect})" if content.match?(pattern) }
+  DENYLIST.filter_map { |pattern, reason| "#{reason} (#{content[pattern].inspect})" if content.match?(pattern) } +
+    codename_problems(content) + hostname_problems(content)
+end
+
+def codename_problems(content)
+  words = content.downcase.scan(/[a-z0-9_]+/).uniq
+  words.select { |word| CODENAME_DIGESTS.include?(Digest::SHA256.hexdigest(word)) }
+    .map { |word| "names an internal codename (#{word.inspect})" }
+end
+
+def hostname_problems(content)
+  content.scan(HOSTNAME).map(&:downcase).uniq.filter_map do |host|
+    labels = host.split(".")
+    if labels.include?("internal") && host != DOCKER_HOST
+      "names an internal hostname (#{host.inspect})"
+    elsif (host == "logpacer.com" || host.end_with?(".logpacer.com")) && !PUBLIC_HOSTS.include?(host)
+      "names a logpacer.com host that is not public (#{host.inspect})"
+    end
+  end
 end
 
 case ARGV
