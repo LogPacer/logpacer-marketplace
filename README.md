@@ -86,16 +86,25 @@ Each agent signs in to LogPacer with OAuth the first time it uses the server. Yo
 
 Grant write access when LogPacer asks for it, or turn on Allow changes for the connection under Settings → API Credentials in LogPacer. The agent needs it to make changes, and changes that alter collection or notifications still wait for your approval.
 
+### Another LogPacer deployment
+
+In Claude Code the plugin connects to the deployment `LOGPACER_BASE_URL` names, the same variable the `logpacer` CLI reads, and to `https://app.logpacer.com` when it is unset. Set it where you start Claude Code, for one session or in a directory's environment:
+
+```bash
+LOGPACER_BASE_URL=https://logpacer.example.com claude
+```
+
+The other agents always connect to `https://app.logpacer.com`; add a second server by hand for another deployment, as in Developing locally.
+
 ## Developing locally
 
-The shipped manifests always point at `https://app.logpacer.com/mcp`. To test against a local LogPacer, load the plugin from this checkout and add a separate dev server by hand; the override lives only in your local agent config. Replace `<port>` with your local LogPacer port.
+The shipped manifests point at `https://app.logpacer.com/mcp`. To test against a local LogPacer, load the plugin from this checkout. Claude Code follows `LOGPACER_BASE_URL`; in the other agents, add a separate dev server by hand, so the override lives only in your local agent config. Replace `<port>` with your local LogPacer port.
 
-Both servers offer the same tools. In Claude Code, disable `plugin:logpacer:logpacer` in `/mcp`; in other agents, tell the agent to use `logpacer-dev`, so tool calls do not reach production.
+Both servers offer the same tools, so tell those agents to use `logpacer-dev` to keep tool calls off production.
 
 ```bash
 # Claude Code
-claude mcp add --transport http logpacer-dev http://localhost:<port>/mcp
-claude --plugin-dir .
+LOGPACER_BASE_URL=http://localhost:<port> claude --plugin-dir .
 
 # Codex
 codex plugin marketplace add "$PWD"
@@ -134,7 +143,8 @@ CI runs all of these except `agy plugin validate`, which runs locally.
 
 | File | Read by |
 |---|---|
-| `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.mcp.json` | Claude Code |
+| `.claude-plugin/plugin.json` (with its MCP server), `.claude-plugin/marketplace.json` | Claude Code |
+| `.mcp.json` | Cursor, and older Codex versions |
 | `plugin.json`, `mcp.json` (Agent Plugins 1.0) | Codex and other Agent Plugins clients |
 | `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json` | Codex (catalog and display details; older Codex versions read skills and MCP here too) |
 | `.cursor-plugin/plugin.json`, `.cursor-plugin/marketplace.json` | Cursor |

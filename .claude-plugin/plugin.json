@@ -1,7 +1,7 @@
 {
   "name": "logpacer",
   "displayName": "LogPacer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Connect your coding agent to the hosted LogPacer MCP server, with skills for setting up collection, instrumenting apps and investigating logs.",
   "author": {
     "name": "LogPacer",
@@ -18,5 +18,11 @@
     "otlp",
     "metrics",
     "traces"
-  ]
+  ],
+  "mcpServers": {
+    "logpacer": {
+      "type": "http",
+      "url": "${LOGPACER_BASE_URL:-https://app.logpacer.com}/mcp"
+    }
+  }
 }
