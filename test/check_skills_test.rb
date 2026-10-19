@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "minitest/autorun"
+require "digest"
 require "fileutils"
 require "open3"
 require "tmpdir"
@@ -36,32 +37,52 @@ class CheckSkillsTest < Minitest::Test
     assert_includes output, "9000 bytes"
   end
 
-  def test_fails_a_skill_naming_an_internal_codename
-    write_skill("logpacer", frontmatter("logpacer") + "The loganalyzer parses your logs.\n")
+  # The shipped list holds only digests, so these tests deny a made-up
+  # codename in the copied script rather than name a real one here.
+  def test_fails_a_skill_naming_an_internal_codename_in_any_case
+    deny_codename("frobnicator")
 
-    output, status = run_script
-
-    refute status.success?
-    assert_includes output, "skills/logpacer/SKILL.md"
-    assert_includes output, "loganalyzer"
-  end
-
-  def test_fails_every_denylisted_term
-    [
-      "sublogger", "Sublog", "loganalyzer", "LogRelay", "logpacer_wire", "OpenTelemetry-native",
-      "edge.internal.logpacer.com", "app.internal", "registry.logpacer.com", "Harbor"
-    ].each do |term|
-      write_skill("logpacer", frontmatter("logpacer") + "Mentions #{term} here.\n")
+    ["The frobnicator parses your logs.\n", "Ask Frobnicator.\n", "Run frobnicator-rs.\n"].each do |body|
+      write_skill("logpacer", frontmatter("logpacer") + body)
 
       output, status = run_script
 
-      refute status.success?, "expected #{term.inspect} to be rejected"
-      assert_includes output, "skills/logpacer/SKILL.md", term
+      refute status.success?, "expected #{body.inspect} to be rejected"
+      assert_includes output, "skills/logpacer/SKILL.md"
+      assert_includes output, "internal codename"
     end
   end
 
-  def test_fails_a_denylisted_term_in_a_skill_reference
-    write_file("skills/logpacer/references/node.md", "Send spans to logrelay.\n")
+  def test_ships_codenames_only_as_sha256_digests
+    script = File.read(SCRIPT)
+    digests = script[/CODENAME_DIGESTS = %w\[(.*?)\]/m, 1].split
+
+    refute_empty digests
+    assert digests.all? { |digest| digest.match?(/\A\h{64}\z/) }, "every entry is a SHA-256 hex digest"
+  end
+
+  def test_fails_internal_and_unlisted_logpacer_hosts
+    ["metrics.example.internal", "db.internal", "beta.logpacer.com", "https://staging.logpacer.com/mcp"].each do |host|
+      write_skill("logpacer", frontmatter("logpacer") + "Mentions #{host} here.\n")
+
+      output, status = run_script
+
+      refute status.success?, "expected #{host.inspect} to be rejected"
+      assert_includes output, "skills/logpacer/SKILL.md", host
+    end
+  end
+
+  def test_passes_public_hosts_and_the_docker_host
+    write_skill("logpacer", frontmatter("logpacer") +
+      "Connect to https://app.logpacer.com/mcp (see logpacer.com), and from a container reach host.docker.internal:4318.\n")
+
+    output, status = run_script
+
+    assert status.success?, output
+  end
+
+  def test_fails_opentelemetry_native_in_a_skill_reference
+    write_file("skills/logpacer/references/node.md", "LogPacer is OpenTelemetry-native.\n")
 
     output, status = run_script
 
@@ -108,6 +129,11 @@ class CheckSkillsTest < Minitest::Test
   private
     def run_script
       Open3.capture2e("ruby", File.join(@root, "scripts", "check-skills"))
+    end
+
+    def deny_codename(word)
+      path = File.join(@root, "scripts", "check-skills")
+      File.write(path, File.read(path).sub("CODENAME_DIGESTS = %w[", "CODENAME_DIGESTS = %w[\n  #{Digest::SHA256.hexdigest(word)}"))
     end
 
     def frontmatter(name)
