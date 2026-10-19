@@ -1,0 +1,104 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Keeps every versioned manifest in lockstep with .claude-plugin/plugin.json.
+# Standard library only, so CI runs it on a bare runner Ruby.
+
+require "json"
+
+ROOT = File.expand_path("..", __dir__)
+SOURCE = ".claude-plugin/plugin.json"
+
+PLUGIN_MANIFESTS = %w[
+  .codex-plugin/plugin.json
+  .cursor-plugin/plugin.json
+  plugin.json
+  gemini-extension.json
+].freeze
+
+MARKETPLACES = %w[
+  .claude-plugin/marketplace.json
+  .cursor-plugin/marketplace.json
+].freeze
+
+HELP = <<~HELP
+  Usage: scripts/sync-versions [--check | --fix]
+
+  Compares every versioned manifest with the version in #{SOURCE},
+  the single source of truth.
+
+    --check     report drift and exit 1 if any (the default)
+    --fix       rewrite drifted versions from #{SOURCE}
+    -h, --help  show this help
+
+  Versioned: #{(PLUGIN_MANIFESTS + MARKETPLACES).join(", ")}
+  (marketplace files by their plugin entry). .agents/plugins/marketplace.json
+  and .antigravity-plugin/plugin.json carry no version field.
+HELP
+
+Drift = Struct.new(:path, :where, :found)
+
+def read_json(path)
+  JSON.parse(File.read(File.join(ROOT, path)))
+rescue Errno::ENOENT
+  abort "✗ #{path}: file is missing"
+rescue JSON::ParserError => e
+  abort "✗ #{path}: invalid JSON (#{e.message.lines.first.strip})"
+end
+
+def write_json(path, data)
+  File.write(File.join(ROOT, path), JSON.pretty_generate(data) + "\n")
+end
+
+def plugin_entry(path, data, name)
+  data.fetch("plugins", []).find { |entry| entry["name"] == name } or
+    abort "✗ #{path}: no plugin entry named #{name.inspect}"
+end
+
+def versioned_targets(name)
+  PLUGIN_MANIFESTS.map { |path| [path, "version", ->(data) { data }] } +
+    MARKETPLACES.map { |path| [path, "plugins[#{name}].version", ->(data) { plugin_entry(path, data, name) }] }
+end
+
+mode =
+  case ARGV
+  in [] | ["--check"] then :check
+  in ["--fix"] then :fix
+  in ["-h"] | ["--help"]
+    puts HELP
+    exit
+  else
+    abort "✗ unknown arguments: #{ARGV.join(" ")}\n\n#{HELP}"
+  end
+
+source = read_json(SOURCE)
+truth = source["version"] or abort "✗ #{SOURCE}: no version"
+name = source.fetch("name")
+
+drifted = versioned_targets(name).filter_map do |path, where, holder|
+  data = read_json(path)
+  found = holder.call(data)["version"]
+  next if found == truth
+
+  if mode == :fix
+    holder.call(data)["version"] = truth
+    write_json(path, data)
+  end
+  Drift.new(path, where, found)
+end
+
+if drifted.empty?
+  puts "✓ every manifest is at #{truth}"
+  exit
+end
+
+drifted.each do |drift|
+  puts "✗ #{drift.path}: #{drift.where} is #{drift.found.inspect}, #{SOURCE} is #{truth.inspect}"
+end
+
+if mode == :fix
+  puts "✓ rewrote #{drifted.size} version(s) to #{truth}"
+else
+  puts "\nresolve with: scripts/sync-versions --fix"
+  exit 1
+end

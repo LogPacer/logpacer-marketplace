@@ -1,0 +1,43 @@
+name: checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "4.0"
+
+      - name: Every manifest version matches .claude-plugin/plugin.json
+        run: ruby scripts/sync-versions --check
+
+      - name: Skills pass frontmatter, size and public-copy checks
+        run: ruby scripts/check-skills
+
+      - name: Script tests
+        run: ruby -Itest -e 'Dir["test/*_test.rb"].sort.each { |f| require File.expand_path(f) }'
+
+      # Node 22 ships npm 10, which runs the package's postinstall that
+      # fetches the native claude binary (npm 12 holds install scripts back).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Claude Code
+        run: npm install --global @anthropic-ai/claude-code@2.1.301
+
+      - name: Claude marketplace, plugin, MCP config and skills validate strictly
+        run: claude plugin validate --strict .
+
+      # `agy plugin validate .` has no CI install path, so it runs locally
+      # before each release (see README, Developing locally).

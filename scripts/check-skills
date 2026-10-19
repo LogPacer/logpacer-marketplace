@@ -1,0 +1,99 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Checks every skills/*/SKILL.md for valid frontmatter and the size cap, and
+# every file under skills/ for words public copy must not contain.
+# Standard library only, so CI runs it on a bare runner Ruby.
+
+require "yaml"
+
+ROOT = File.expand_path("..", __dir__)
+SKILLS = File.join(ROOT, "skills")
+
+# Codex keeps only the first 8,000 bytes of a SKILL.md in Agent Plugins mode.
+MAX_BYTES = 8000
+
+# Strict Agent Plugins clients skip a skill whose frontmatter has other keys.
+FRONTMATTER_KEYS = %w[name description license compatibility metadata allowed-tools].freeze
+
+DENYLIST = [
+  [/sublog/i, "names the internal codename sublog/sublogger"],
+  [/loganalyzer/i, "names the internal codename loganalyzer"],
+  [/logrelay/i, "names the internal codename logrelay"],
+  [/logpacer_wire/i, "names the internal codename logpacer_wire"],
+  [/opentelemetry-native/i, %(says "OpenTelemetry-native"; say "OTLP-compatible")],
+  [/\.internal\.logpacer\.com/i, "names an internal hostname"],
+  [/\bapp\.internal\b/i, "names an internal hostname"],
+  [/registry\.logpacer\.com/i, "names the internal registry"],
+  [/\bharbor\b/i, "names the internal registry"]
+].freeze
+
+HELP = <<~HELP
+  Usage: scripts/check-skills
+
+  Checks each skills/<name>/SKILL.md:
+    - YAML frontmatter with a name matching the directory and a description,
+      using only the keys #{FRONTMATTER_KEYS.join(", ")}
+    - at most #{MAX_BYTES} bytes
+  and every file under skills/ against the public-copy denylist
+  (internal codenames, internal hostnames and registries, "OpenTelemetry-native").
+
+  Exits 1 and prints file: reason for every problem.
+
+    -h, --help  show this help
+HELP
+
+def relative(path)
+  path.delete_prefix("#{ROOT}/")
+end
+
+def frontmatter_problems(path, content)
+  match = content.match(/\A---\r?\n(.*?)\r?\n---\r?\n/m) or return ["no YAML frontmatter"]
+  frontmatter = YAML.safe_load(match[1])
+  return ["frontmatter is not a mapping"] unless frontmatter.is_a?(Hash)
+
+  directory = File.basename(File.dirname(path))
+  problems = []
+  problems << %(name #{frontmatter["name"].inspect} does not match directory "#{directory}") unless frontmatter["name"] == directory
+  description = frontmatter["description"]
+  problems << "no description" unless description.is_a?(String) && !description.strip.empty?
+  (frontmatter.keys - FRONTMATTER_KEYS).each { |key| problems << "frontmatter key #{key.inspect} is not an Agent Skills field" }
+  problems
+rescue Psych::Exception => e
+  ["frontmatter is not valid YAML (#{e.message})"]
+end
+
+def skill_problems(path)
+  content = File.read(path)
+  problems = frontmatter_problems(path, content)
+  problems << "#{content.bytesize} bytes exceeds the #{MAX_BYTES}-byte limit" if content.bytesize > MAX_BYTES
+  problems
+end
+
+def denylist_problems(path)
+  content = File.binread(path)
+  DENYLIST.filter_map { |pattern, reason| "#{reason} (#{content[pattern].inspect})" if content.match?(pattern) }
+end
+
+case ARGV
+in []
+in ["-h"] | ["--help"]
+  puts HELP
+  exit
+else
+  abort "✗ unknown arguments: #{ARGV.join(" ")}\n\n#{HELP}"
+end
+
+skill_files = Dir.glob(File.join(SKILLS, "*", "SKILL.md")).sort
+all_files = Dir.glob(File.join(SKILLS, "**", "*"), File::FNM_DOTMATCH).select { |path| File.file?(path) }.sort
+
+problems = skill_files.flat_map { |path| skill_problems(path).map { |reason| [path, reason] } } +
+  all_files.flat_map { |path| denylist_problems(path).map { |reason| [path, reason] } }
+
+if problems.empty?
+  puts "✓ #{skill_files.size} skill(s) pass"
+  exit
+end
+
+problems.each { |path, reason| puts "✗ #{relative(path)}: #{reason}" }
+exit 1
