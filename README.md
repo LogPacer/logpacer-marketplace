@@ -94,7 +94,9 @@ In Claude Code the plugin connects to the deployment `LOGPACER_BASE_URL` names, 
 LOGPACER_BASE_URL=https://logpacer.example.com claude
 ```
 
-The other agents always connect to `https://app.logpacer.com`; add a second server by hand for another deployment, as in Developing locally.
+In Codex, keep the plugin installed and add a separately named MCP server for another deployment. Use the project's `.codex/config.toml` for a project-only connection, or `codex mcp add` for a connection available across projects. The bundled production connection stays available.
+
+See [Connecting to other deployments](skills/logpacer/references/connections.md) for configuration, sign-in, project defaults and verification. The `logpacer` skill uses this guide when helping set up connections and keeps operations tied to the selected deployment and account. Examples use a generic hostname; put your own URLs and preferences in your user or project configuration.
 
 ## Developing locally
 

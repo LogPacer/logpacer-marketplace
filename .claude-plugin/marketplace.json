@@ -13,7 +13,7 @@
       "name": "logpacer",
       "source": "./",
       "description": "Connect your coding agent to the hosted LogPacer MCP server, with skills for setting up collection, instrumenting apps and investigating logs.",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "author": {
         "name": "LogPacer",
         "url": "https://logpacer.com"
